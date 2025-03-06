@@ -45,6 +45,10 @@ run.sh
 #!/bin/sh
 java -jar client.jar -u ${DIALER_USER} -p ${DIALER_PASSWORD}
 ```
+```
+运行network.bat
+即可启动认证过程
+```
 
 
 ### 构建

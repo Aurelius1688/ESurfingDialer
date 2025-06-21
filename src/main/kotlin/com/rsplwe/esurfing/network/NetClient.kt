@@ -16,15 +16,13 @@ import java.util.concurrent.TimeUnit
 class RedirectInterceptor : Interceptor {
 
     private val logger: Logger = Logger.getLogger(RedirectInterceptor::class.java)
-    private var redirectCount = 0
 
     override fun intercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
         var response = chain.proceed(request)
+        var redirectCount = 0
 
-        while (response.isRedirect && redirectCount < 5) {
-            redirectCount++
-            response.close()
+        while (response.isRedirect && redirectCount++ < 5) {
             logger.info("Redirect #${redirectCount}")
             logger.info("Url: ${request.url}")
             logger.info("Response Code: ${response.code}")
@@ -48,17 +46,8 @@ class RedirectInterceptor : Interceptor {
 
             val location = response.header("Location") ?: break
 
-            val prepare = request.newBuilder().url(location)
-            if (States.schoolId.isNotEmpty()) {
-                request.header("CDC-SchoolId") ?: prepare.addHeader("CDC-SchoolId", States.schoolId)
-            }
-            if (States.domain.isNotEmpty()) {
-                request.header("CDC-Domain") ?: prepare.addHeader("CDC-Domain", States.domain)
-            }
-            if (States.area.isNotEmpty()) {
-                request.header("CDC-Area") ?: prepare.addHeader("CDC-Area", States.area)
-            }
-            request = prepare.build()
+            response.close()
+            request = request.newBuilder().url(location).build()
             response = chain.proceed(request)
         }
         return response
@@ -93,6 +82,15 @@ fun post(url: String, data: String, extraHeaders: HashMap<String, String> = Hash
 
     extraHeaders.forEach {
         request.addHeader(it.key, it.value)
+    }
+    if (States.schoolId.isNotEmpty()) {
+        request.addHeader("CDC-SchoolId", States.schoolId)
+    }
+    if (States.domain.isNotEmpty()) {
+        request.addHeader("CDC-Domain", States.domain)
+    }
+    if (States.area.isNotEmpty()) {
+        request.addHeader("CDC-Area", States.area)
     }
 
     return try {
